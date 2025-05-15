@@ -19,9 +19,7 @@ export default function ShippingCalculator({
 }: ShippingCalculatorProps) {
   return (
     <div className="mt-10">
-      <h3 className="text-lg font-medium text-zinc-900">
-        Consultar Frete
-      </h3>
+      <h3 className="text-lg font-medium text-zinc-900">Consultar Frete</h3>
       <div className="mt-4 flex gap-x-4">
         <input
           type="text"
@@ -44,9 +42,9 @@ export default function ShippingCalculator({
       {cepError && <p className="mt-2 text-sm text-red-600">{cepError}</p>}
       {shippingInfo && (
         <div className="mt-4 p-4 border border-zinc-200 rounded-md bg-zinc-50">
-          <p className="text-sm font-medium text-zinc-900">
+          <h4 className="text-sm font-semibold text-zinc-900">
             Endereço de Entrega:
-          </p>
+          </h4>
           <p className="text-sm text-zinc-700">
             {shippingInfo.logradouro}, {shippingInfo.bairro}
           </p>
@@ -57,6 +55,7 @@ export default function ShippingCalculator({
           <p className="mt-2 text-sm text-green-600">
             Frete disponível para este endereço.
           </p>
+          <p className="mt-2 text-sm font-semibold">🚚 Frete Normal: <span className="font-bold">R$9,90</span></p>
         </div>
       )}
     </div>

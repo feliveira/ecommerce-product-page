@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react"
 import products from "@/mocks/products"
-import Image from "next/image"
-import Zoom from "react-medium-image-zoom"
 import "react-medium-image-zoom/dist/styles.css"
 import "animate.css"
 import { ProductColorVariant, ProductImage, ShippingInfo } from "@/types"
 import ShippingCalculator from "@/components/ShippingCalculator"
 import ColorSelector from "@/components/ColorSelector"
 import SizeSelector from "@/components/SizeSelector"
+import ProductImageGallery from "@/components/ProductImageGallery"
 
 const STORAGE_KEY = "productPageState"
-const EXPIRATION_TIME_MS = 15 * 60 * 1000 
+const EXPIRATION_TIME_MS = 15 * 60 * 1000
 
 export default function Home() {
   const selectedProduct = products[0]
@@ -32,6 +31,7 @@ export default function Home() {
   const [cepError, setCepError] = useState("")
   const [isLoadingCep, setIsLoadingCep] = useState(false)
 
+  // Carrega informações de produto salvas
   useEffect(() => {
     if (typeof window === "undefined" || !selectedProduct) {
       return
@@ -41,6 +41,7 @@ export default function Home() {
       const savedState = localStorage.getItem(STORAGE_KEY)
       if (savedState) {
         const {
+          mainImage: savedMainImage,
           productId,
           selectedColorValue,
           selectedSize: savedSize,
@@ -49,14 +50,18 @@ export default function Home() {
           timestamp,
         } = JSON.parse(savedState)
 
-        if(selectedProduct && selectedProduct.id != productId) {
+        if (selectedProduct && selectedProduct.id != productId) {
           localStorage.removeItem(STORAGE_KEY)
         }
 
         const now = Date.now()
 
         if (now - timestamp < EXPIRATION_TIME_MS) {
-          
+
+          if (savedMainImage) {
+              setMainImage(savedMainImage);
+          }
+
           if (selectedColorValue) {
             const colorToRestore = selectedProduct.variants.colors.find(
               (color) => color.value === selectedColorValue
@@ -64,17 +69,20 @@ export default function Home() {
             if (colorToRestore) {
               setSelectedColor(colorToRestore)
             }
-          } 
+          }
 
           if (savedSize && selectedProduct.variants.sizes.includes(savedSize)) {
             setSelectedSize(savedSize)
-          } 
+          }
+
           if (savedCep) {
             setCep(savedCep)
-          } 
+          }
+
           if (savedShippingInfo) {
             setShippingInfo(savedShippingInfo)
           }
+
         } else {
           localStorage.removeItem(STORAGE_KEY)
         }
@@ -85,13 +93,19 @@ export default function Home() {
     }
   }, [selectedProduct])
 
+  // Salva informações selecionadas pelo usuário
   useEffect(() => {
     if (typeof window === "undefined" || !selectedProduct) {
       return
     }
 
+    if (!mainImage && colorFilteredImages.length > 0) {
+      return;
+    }
+
     try {
       const stateToSave = {
+        mainImage: mainImage,
         productId: selectedProduct.id,
         selectedColorValue: selectedColor.value,
         selectedSize: selectedSize,
@@ -103,7 +117,7 @@ export default function Home() {
     } catch (error) {
       console.error("Falha ao salvar estado no localStorage:", error)
     }
-  }, [selectedColor, selectedSize, cep, shippingInfo, selectedProduct])
+  }, [selectedColor, selectedSize, cep, shippingInfo, selectedProduct, mainImage, colorFilteredImages])
 
   useEffect(() => {
     if (selectedProduct && selectedColor) {
@@ -189,50 +203,15 @@ export default function Home() {
 
   return (
     <div className="container flex flex-col lg:flex-row gap-8 mx-auto p-4 lg:p-8 min-h-screen">
-      <div className="w-full flex flex-col lg:w-2/5 animate__animated animate__fadeInDown">
-        <div className="w-full h-auto aspect-square bg-zinc-200 max-w-[600px] max-h-[600px] outline outline-zinc-300 shadow rounded-lg overflow-hidden flex items-center justify-center">
-          {mainImage ? (
-            <Zoom zoomMargin={40}>
-              <Image
-                src={mainImage}
-                alt={`${selectedProduct.title} - ${selectedColor.name}`}
-                width={600}
-                height={600}
-                className="object-cover w-full h-full cursor-zoom-in"
-                priority
-              />
-            </Zoom>
-          ) : (
-            <div className="text-zinc-500">Image not available</div>
-          )}
-        </div>
-
-        <div className="w-full mt-4 grid grid-cols-4 gap-2 sm:gap-4 max-w-[600px] max-h-[600px]">
-          {colorFilteredImages.map((image) => (
-            <button
-              key={image.id}
-              onClick={() => handleThumbnailClick(image.url)}
-              className={`w-full aspect-square bg-zinc-200 rounded-lg overflow-hidden cursor-pointer outline-zinc-300 shadow ${
-                mainImage === image.url
-                  ? "ring-2 ring-zinc-900 ring-offset-2"
-                  : "border-zinc-300 hover:border-zinc-500"
-              }`}
-              aria-label={`View image ${image.id.replace("img", "")} for ${
-                selectedColor.name
-              }`}
-            >
-              <Image
-                src={image.url}
-                alt={`Thumbnail ${image.id}`}
-                width={150}
-                height={150}
-                className="object-cover w-full h-full"
-              />
-            </button>
-          ))}
-        </div>
+      <div className="w-full lg:w-2/5">
+        <ProductImageGallery
+          mainImage={mainImage}
+          colorFilteredImages={colorFilteredImages}
+          selectedColor={selectedColor} 
+          productTitle={selectedProduct.title} 
+          handleThumbnailClick={handleThumbnailClick}
+        />
       </div>
-
       <div className="w-full lg:w-3/5 lg:p-4 animate__animated animate__fadeInUp">
         <ul className="text-zinc-400 flex text-xs lg:text-base">
           <li>

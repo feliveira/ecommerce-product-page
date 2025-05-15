@@ -8,6 +8,7 @@ import "react-medium-image-zoom/dist/styles.css"
 import "animate.css"
 import { ProductColorVariant, ProductImage, ShippingInfo } from "@/types"
 import ShippingCalculator from "@/components/ShippingCalculator"
+import ColorSelector from "@/components/ColorSelector"
 
 const STORAGE_KEY = "productPageState"
 const EXPIRATION_TIME_MS = 15 * 60 * 1000 
@@ -282,35 +283,11 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col">
-          <p className="text-lg text-zinc-900">
-            Cor: <span className="font-bold">{selectedColor.name}</span>
-          </p>
-          <div className="flex items-center gap-3 mt-3">
-            {selectedProduct.variants.colors.map(
-              (color: ProductColorVariant) => (
-                <button
-                  key={color.value}
-                  onClick={() => handleColorSelect(color)}
-                  className={`relative -m-0.5 flex items-center justify-center rounded-full p-0.5 focus:outline-none transition-all duration-150 ease-in-out
-                            ${
-                              selectedColor.value === color.value
-                                ? "ring-2 ring-offset-1 ring-zinc-900"
-                                : "hover:ring-1 hover:ring-zinc-400"
-                            }`}
-                  title={color.name}
-                  aria-label={`Select color ${color.name}`}
-                  aria-pressed={selectedColor.value === color.value}
-                >
-                  <span
-                    style={{ backgroundColor: color.hex }}
-                    className="h-8 w-8 rounded-full border border-black border-opacity-10"
-                  />
-                </button>
-              )
-            )}
-          </div>
-        </div>
+        <ColorSelector
+          colors={selectedProduct.variants.colors}
+          selectedColor={selectedColor}
+          onSelectColor={handleColorSelect}
+        />
 
         <button
           type="submit"

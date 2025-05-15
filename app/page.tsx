@@ -30,12 +30,11 @@ export default function Home() {
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null)
   const [cepError, setCepError] = useState("")
   const [isLoadingCep, setIsLoadingCep] = useState(false)
+  const [hasLoadedSavedState, setHasLoadedSavedState] = useState(false)
 
   // Carrega informações de produto salvas
   useEffect(() => {
-    if (typeof window === "undefined" || !selectedProduct) {
-      return
-    }
+    if (typeof window === "undefined" || !selectedProduct) return
 
     try {
       const savedState = localStorage.getItem(STORAGE_KEY)
@@ -50,39 +49,26 @@ export default function Home() {
           timestamp,
         } = JSON.parse(savedState)
 
-        if (selectedProduct && selectedProduct.id != productId) {
+        if (selectedProduct.id !== productId) {
           localStorage.removeItem(STORAGE_KEY)
+          setHasLoadedSavedState(true)
+          return
         }
 
         const now = Date.now()
-
         if (now - timestamp < EXPIRATION_TIME_MS) {
-
-          if (savedMainImage) {
-              setMainImage(savedMainImage);
-          }
-
+          if (savedMainImage) setMainImage(savedMainImage)
           if (selectedColorValue) {
             const colorToRestore = selectedProduct.variants.colors.find(
               (color) => color.value === selectedColorValue
             )
-            if (colorToRestore) {
-              setSelectedColor(colorToRestore)
-            }
+            if (colorToRestore) setSelectedColor(colorToRestore)
           }
-
           if (savedSize && selectedProduct.variants.sizes.includes(savedSize)) {
             setSelectedSize(savedSize)
           }
-
-          if (savedCep) {
-            setCep(savedCep)
-          }
-
-          if (savedShippingInfo) {
-            setShippingInfo(savedShippingInfo)
-          }
-
+          if (savedCep) setCep(savedCep)
+          if (savedShippingInfo) setShippingInfo(savedShippingInfo)
         } else {
           localStorage.removeItem(STORAGE_KEY)
         }
@@ -90,6 +76,8 @@ export default function Home() {
     } catch (error) {
       console.error("Falha ao carregar estado do localStorage:", error)
       localStorage.removeItem(STORAGE_KEY)
+    } finally {
+      setHasLoadedSavedState(true)
     }
   }, [selectedProduct])
 
@@ -100,7 +88,7 @@ export default function Home() {
     }
 
     if (!mainImage && colorFilteredImages.length > 0) {
-      return;
+      return
     }
 
     try {
@@ -117,7 +105,15 @@ export default function Home() {
     } catch (error) {
       console.error("Falha ao salvar estado no localStorage:", error)
     }
-  }, [selectedColor, selectedSize, cep, shippingInfo, selectedProduct, mainImage, colorFilteredImages])
+  }, [
+    selectedColor,
+    selectedSize,
+    cep,
+    shippingInfo,
+    selectedProduct,
+    mainImage,
+    colorFilteredImages,
+  ])
 
   useEffect(() => {
     if (selectedProduct && selectedColor) {
@@ -125,27 +121,22 @@ export default function Home() {
         (img: ProductImage) => img.url.includes(`/${selectedColor.value}/`)
       )
       setColorFilteredImages(filtered)
-      if (filtered.length > 0) {
-        setMainImage(filtered[0].url)
-      } else {
-        setMainImage("")
-      }
-    }
-  }, [selectedColor, selectedProduct])
 
-  useEffect(() => {
-    if (selectedProduct && selectedColor) {
-      const filtered: ProductImage[] = selectedProduct.images.filter(
-        (img: ProductImage) => img.url.includes(`/${selectedColor.value}/`)
-      )
-      setColorFilteredImages(filtered)
       if (filtered.length > 0) {
-        setMainImage(filtered[0].url)
+        const mainImageStillExists =
+          mainImage && filtered.some((img) => img.url === mainImage)
+
+        if (mainImage && mainImageStillExists) {
+          setMainImage(mainImage)
+        } else if (hasLoadedSavedState) {
+          setMainImage(filtered[0].url)
+        }
       } else {
         setMainImage("")
       }
     }
-  }, [selectedColor, selectedProduct])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor, selectedProduct, hasLoadedSavedState])
 
   const handleSizeSelect = (size: string) => {
     setSelectedSize(size)
@@ -207,8 +198,8 @@ export default function Home() {
         <ProductImageGallery
           mainImage={mainImage}
           colorFilteredImages={colorFilteredImages}
-          selectedColor={selectedColor} 
-          productTitle={selectedProduct.title} 
+          selectedColor={selectedColor}
+          productTitle={selectedProduct.title}
           handleThumbnailClick={handleThumbnailClick}
         />
       </div>

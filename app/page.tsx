@@ -9,6 +9,7 @@ import "animate.css"
 import { ProductColorVariant, ProductImage, ShippingInfo } from "@/types"
 import ShippingCalculator from "@/components/ShippingCalculator"
 import ColorSelector from "@/components/ColorSelector"
+import SizeSelector from "@/components/SizeSelector"
 
 const STORAGE_KEY = "productPageState"
 const EXPIRATION_TIME_MS = 15 * 60 * 1000 
@@ -261,27 +262,11 @@ export default function Home() {
 
         <div className="w-full h-0.5 bg-zinc-300 my-6"></div>
 
-        <div className="mt-2 flex flex-col">
-          <p className="text-lg text-zinc-900">
-            Tamanho: <span className="font-bold">{selectedSize}</span>
-          </p>
-          <div className="flex items-center gap-3 mt-3">
-            {selectedProduct.variants.sizes.map((size: string) => (
-              <button
-                key={size}
-                onClick={() => handleSizeSelect(size)}
-                className={`flex items-center justify-center px-4 py-2 rounded-lg transition-colors delay-100 cursor-pointer
-                            ${
-                              selectedSize === size
-                                ? "bg-zinc-900 text-zinc-100"
-                                : "bg-zinc-100 text-zinc-900"
-                            }`}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-        </div>
+        <SizeSelector
+          sizes={selectedProduct.variants.sizes}
+          selectedSize={selectedSize}
+          onSelectSize={handleSizeSelect}
+        />
 
         <ColorSelector
           colors={selectedProduct.variants.colors}

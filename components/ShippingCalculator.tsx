@@ -29,19 +29,19 @@ export default function ShippingCalculator({
           value={cep.replace(/^(\d{5})(\d{3})$/, "$1-$2")}
           onChange={onCepChange}
           placeholder="Digite seu CEP"
-          className="block w-full max-w-xs rounded-md border-zinc-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm p-2"
+          className="block w-full max-w-xs outline outline-zinc-300 shadow rounded-lg sm:text-sm p-2"
         />
         <button
           onClick={onCalculateShipping}
           disabled={isLoadingCep || cep.length !== 8}
-          className="rounded-md bg-zinc-900 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-50"
+          className="rounded-lg bg-zinc-900 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-50"
         >
           {isLoadingCep ? "Calculando..." : "Calcular"}
         </button>
       </div>
       {cepError && <p className="mt-2 text-sm text-red-600">{cepError}</p>}
       {shippingInfo && (
-        <div className="mt-4 p-4 border border-zinc-200 rounded-md bg-zinc-50">
+        <div className="mt-4 p-4 outline-zinc-300 shadow rounded-lg bg-zinc-50">
           <h4 className="text-sm font-semibold text-zinc-900">
             Endereço de Entrega:
           </h4>

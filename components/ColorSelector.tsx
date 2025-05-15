@@ -24,8 +24,8 @@ export default function ColorSelector({
             className={`relative -m-0.5 flex items-center justify-center rounded-full p-0.5 focus:outline-none transition-all duration-150 ease-in-out
                           ${
                             selectedColor.value === color.value
-                              ? "ring-2 ring-offset-1 ring-zinc-900"
-                              : "hover:ring-1 hover:ring-zinc-400"
+                              ? "ring-2 ring-zinc-900"
+                              : "hover:ring-1 hover:ring-zinc-300"
                           }`}
             title={color.name}
             aria-label={`Select color ${color.name}`}
@@ -33,7 +33,7 @@ export default function ColorSelector({
           >
             <span
               style={{ backgroundColor: color.hex }}
-              className="h-8 w-8 rounded-full border border-black border-opacity-10"
+              className="h-8 w-8 rounded-full border border-zinc-900 border-opacity-10"
             />
           </button>
         ))}

@@ -43,7 +43,7 @@ export default function ProductImageGallery({
             key={image.id}
             onClick={() => handleThumbnailClick(image.url)}
             className={`w-full aspect-square bg-zinc-200 rounded-lg overflow-hidden cursor-pointer outline-zinc-300 shadow ${
-              mainImage === image.url ? 'ring-2 ring-zinc-900 ring-offset-2' : 'border-zinc-300 hover:border-zinc-500'
+              mainImage === image.url ? 'ring-2 ring-zinc-900' : 'border-zinc-300 hover:border-zinc-500'
             }`}
             aria-label={`Imagem ${image.id.replace('img', '')} para cor ${selectedColor.name}`}
           >

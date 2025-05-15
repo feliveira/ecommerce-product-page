@@ -1,34 +1,297 @@
-import products from "@/mocks/products";
+"use client"
+
+import { useState, useEffect } from "react"
+import products from "@/mocks/products"
+import Image from "next/image"
+import Zoom from "react-medium-image-zoom"
+import "react-medium-image-zoom/dist/styles.css"
+import "animate.css"
+
+interface ProductImage {
+  id: string
+  url: string
+}
+
+interface ProductColorVariant {
+  name: string
+  value: string
+  hex: string
+}
+
+interface ShippingInfo {
+  logradouro: string
+  localidade: string
+  bairro: string
+  cep: string
+  uf: string
+}
+
+const STORAGE_KEY = "productPageState"
+const EXPIRATION_TIME_MS = 15 * 60 * 1000 
 
 export default function Home() {
-  const selectedProduct = products[0];
+  const selectedProduct = products[0]
+
+  const [selectedColor, setSelectedColor] = useState<ProductColorVariant>(
+    selectedProduct.variants.colors[0]
+  )
+  const [selectedSize, setSelectedSize] = useState<string>(
+    selectedProduct.variants.sizes[0]
+  )
+  const [mainImage, setMainImage] = useState<string>("")
+  const [colorFilteredImages, setColorFilteredImages] = useState<
+    ProductImage[]
+  >([])
+  const [cep, setCep] = useState("")
+  const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null)
+  const [cepError, setCepError] = useState("")
+  const [isLoadingCep, setIsLoadingCep] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !selectedProduct) {
+      return
+    }
+
+    try {
+      const savedState = localStorage.getItem(STORAGE_KEY)
+      if (savedState) {
+        const {
+          productId,
+          selectedColorValue,
+          selectedSize: savedSize,
+          cep: savedCep,
+          shippingInfo: savedShippingInfo,
+          timestamp,
+        } = JSON.parse(savedState)
+
+        if(selectedProduct && selectedProduct.id != productId) {
+          localStorage.removeItem(STORAGE_KEY)
+        }
+
+        const now = Date.now()
+
+        if (now - timestamp < EXPIRATION_TIME_MS) {
+          
+          if (selectedColorValue) {
+            const colorToRestore = selectedProduct.variants.colors.find(
+              (color) => color.value === selectedColorValue
+            )
+            if (colorToRestore) {
+              setSelectedColor(colorToRestore)
+            }
+          } 
+
+          if (savedSize && selectedProduct.variants.sizes.includes(savedSize)) {
+            setSelectedSize(savedSize)
+          } 
+          if (savedCep) {
+            setCep(savedCep)
+          } 
+          if (savedShippingInfo) {
+            setShippingInfo(savedShippingInfo)
+          }
+        } else {
+          localStorage.removeItem(STORAGE_KEY)
+        }
+      }
+    } catch (error) {
+      console.error("Falha ao carregar estado do localStorage:", error)
+      localStorage.removeItem(STORAGE_KEY)
+    }
+  }, [selectedProduct])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !selectedProduct) {
+      return
+    }
+
+    try {
+      const stateToSave = {
+        productId: selectedProduct.id,
+        selectedColorValue: selectedColor.value,
+        selectedSize: selectedSize,
+        cep: cep,
+        shippingInfo: shippingInfo,
+        timestamp: Date.now(),
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+    } catch (error) {
+      console.error("Falha ao salvar estado no localStorage:", error)
+    }
+  }, [selectedColor, selectedSize, cep, shippingInfo, selectedProduct])
+
+  useEffect(() => {
+    if (selectedProduct && selectedColor) {
+      const filtered: ProductImage[] = selectedProduct.images.filter(
+        (img: ProductImage) => img.url.includes(`/${selectedColor.value}/`)
+      )
+      setColorFilteredImages(filtered)
+      if (filtered.length > 0) {
+        setMainImage(filtered[0].url)
+      } else {
+        setMainImage("")
+      }
+    }
+  }, [selectedColor, selectedProduct])
+
+  useEffect(() => {
+    if (selectedProduct && selectedColor) {
+      const filtered: ProductImage[] = selectedProduct.images.filter(
+        (img: ProductImage) => img.url.includes(`/${selectedColor.value}/`)
+      )
+      setColorFilteredImages(filtered)
+      if (filtered.length > 0) {
+        setMainImage(filtered[0].url)
+      } else {
+        setMainImage("")
+      }
+    }
+  }, [selectedColor, selectedProduct])
+
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size)
+  }
+
+  const handleColorSelect = (color: ProductColorVariant) => {
+    setSelectedColor(color)
+  }
+
+  const handleThumbnailClick = (imageUrl: string) => {
+    setMainImage(imageUrl)
+  }
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "")
+    setCep(value)
+    if (value.length !== 8) {
+      setShippingInfo(null)
+      setCepError("CEP deve conter 8 dígitos.")
+    } else {
+      setCepError("")
+    }
+  }
+
+  const fetchShippingInfo = async () => {
+    if (cep.length !== 8) {
+      setCepError("Por favor, insira um CEP válido com 8 dígitos.")
+      setShippingInfo(null)
+      return
+    }
+    setIsLoadingCep(true)
+    setCepError("")
+    setShippingInfo(null)
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      const data = await response.json()
+      if (data.erro) {
+        setCepError("CEP não encontrado ou inválido.")
+        setShippingInfo(null)
+      } else {
+        setShippingInfo(data)
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error)
+      setCepError("Erro ao consultar o CEP. Tente novamente.")
+      setShippingInfo(null)
+    } finally {
+      setIsLoadingCep(false)
+    }
+  }
+
+  if (!selectedProduct) {
+    return <div>Carregando produto...</div>
+  }
 
   return (
     <div className="container flex flex-col lg:flex-row gap-8 mx-auto p-4 lg:p-8 min-h-screen">
-      <div className="w-full flex flex-col lg:w-2/5">
-        <div className="w-full h-full aspect-square bg-red-500 max-w-[600px] max-h-[600px] border rounded-lg"></div>
-        <div className="w-full mt-4 grid grid-cols-4 gap-2 sm:gap-4">
-          <div className="w-full aspect-square bg-red-500 border rounded-lg"></div>
-          <div className="w-full aspect-square bg-red-500 border rounded-lg"></div>
-          <div className="w-full aspect-square bg-red-500 border rounded-lg"></div>
-          <div className="w-full aspect-square bg-red-500 border rounded-lg"></div>
+      <div className="w-full flex flex-col lg:w-2/5 animate__animated animate__fadeInDown">
+        <div className="w-full h-auto aspect-square bg-zinc-200 max-w-[600px] max-h-[600px] outline outline-zinc-300 shadow rounded-lg overflow-hidden flex items-center justify-center">
+          {mainImage ? (
+            <Zoom zoomMargin={40}>
+              <Image
+                src={mainImage}
+                alt={`${selectedProduct.title} - ${selectedColor.name}`}
+                width={600}
+                height={600}
+                className="object-cover w-full h-full cursor-zoom-in"
+                priority
+              />
+            </Zoom>
+          ) : (
+            <div className="text-zinc-500">Image not available</div>
+          )}
+        </div>
+
+        <div className="w-full mt-4 grid grid-cols-4 gap-2 sm:gap-4 max-w-[600px] max-h-[600px]">
+          {colorFilteredImages.map((image) => (
+            <button
+              key={image.id}
+              onClick={() => handleThumbnailClick(image.url)}
+              className={`w-full aspect-square bg-zinc-200 rounded-lg overflow-hidden cursor-pointer outline-zinc-300 shadow ${
+                mainImage === image.url
+                  ? "ring-2 ring-zinc-900 ring-offset-2"
+                  : "border-zinc-300 hover:border-zinc-500"
+              }`}
+              aria-label={`View image ${image.id.replace("img", "")} for ${
+                selectedColor.name
+              }`}
+            >
+              <Image
+                src={image.url}
+                alt={`Thumbnail ${image.id}`}
+                width={150}
+                height={150}
+                className="object-cover w-full h-full"
+              />
+            </button>
+          ))}
         </div>
       </div>
-      <div className="w-full lg:w-3/5 lg:p-4">
-        <h1 className="text-3xl text-gray-900">{selectedProduct.title}</h1>
-        <p className="text-3xl font-extrabold text-gray-900 mt-3">
-          R${selectedProduct.price}
+
+      <div className="w-full lg:w-3/5 lg:p-4 animate__animated animate__fadeInUp">
+        <ul className="text-zinc-400 flex text-xs lg:text-base">
+          <li>
+            <a href="#" className="hover:underline">
+              INÍCIO
+            </a>
+          </li>
+          <li>/</li>
+          <li>
+            <a href="#" className="hover:underline">
+              CAMISETAS
+            </a>
+          </li>
+          <li>/</li>
+          <li>
+            <a href="#" className="hover:underline">
+              <span aria-current="page" className="font-semibold uppercase">
+                {selectedProduct.title}
+              </span>
+            </a>
+          </li>
+        </ul>
+        <h1 className="text-3xl text-zinc-900">{selectedProduct.title}</h1>
+        <p className="text-3xl font-extrabold text-zinc-900 mt-3">
+          R${selectedProduct.price.toFixed(2).replace(".", ",")}
         </p>
 
-        <div className="w-full h-0.5 bg-gray-500 my-4"></div>
+        <div className="w-full h-0.5 bg-zinc-300 my-6"></div>
 
         <div className="mt-2 flex flex-col">
-          <p className="text-lg text-gray-900">Tamanho: <span className="font-bold">P</span></p>
-          <div className="flex items-center gap-3 mt-2">
-            {selectedProduct.variants.sizes.map((size) => (
+          <p className="text-lg text-zinc-900">
+            Tamanho: <span className="font-bold">{selectedSize}</span>
+          </p>
+          <div className="flex items-center gap-3 mt-3">
+            {selectedProduct.variants.sizes.map((size: string) => (
               <button
                 key={size}
-                className="flex border items-center justify-center px-4 py-1 rounded-lg"
+                onClick={() => handleSizeSelect(size)}
+                className={`flex items-center justify-center px-4 py-2 rounded-lg transition-colors delay-100 cursor-pointer
+                            ${
+                              selectedSize === size
+                                ? "bg-zinc-900 text-zinc-100"
+                                : "bg-zinc-100 text-zinc-900"
+                            }`}
               >
                 {size}
               </button>
@@ -36,34 +299,91 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mt-2 flex flex-col">
-          <p className="text-lg text-gray-900">Cor: <span className="font-bold">Branca</span></p>
-          <div className="flex items-center gap-3 mt-2">
-            {selectedProduct.variants.colors.map((color) => (
-              <button
-                key={color.value}
-               
-                className="relative -m-0.5 flex items-center justify-center rounded-full p-0.5 focus:outline-none"
-                title={color.name}
-                aria-label={color.name}
-              >
-                <span
-                  style={{ backgroundColor: color.hex }}
-                  className="h-8 w-8 rounded-full border border-black border-opacity-10"
-                />
-              </button>
-            ))}
+        <div className="mt-6 flex flex-col">
+          <p className="text-lg text-zinc-900">
+            Cor: <span className="font-bold">{selectedColor.name}</span>
+          </p>
+          <div className="flex items-center gap-3 mt-3">
+            {selectedProduct.variants.colors.map(
+              (color: ProductColorVariant) => (
+                <button
+                  key={color.value}
+                  onClick={() => handleColorSelect(color)}
+                  className={`relative -m-0.5 flex items-center justify-center rounded-full p-0.5 focus:outline-none transition-all duration-150 ease-in-out
+                            ${
+                              selectedColor.value === color.value
+                                ? "ring-2 ring-offset-1 ring-zinc-900"
+                                : "hover:ring-1 hover:ring-zinc-400"
+                            }`}
+                  title={color.name}
+                  aria-label={`Select color ${color.name}`}
+                  aria-pressed={selectedColor.value === color.value}
+                >
+                  <span
+                    style={{ backgroundColor: color.hex }}
+                    className="h-8 w-8 rounded-full border border-black border-opacity-10"
+                  />
+                </button>
+              )
+            )}
           </div>
         </div>
 
         <button
           type="submit"
-          className="mt-10 w-full py-3 border bg-gray-900 text-white rounded-lg"
+          className="mt-10 w-full py-3 border bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900"
         >
           COMPRAR
         </button>
 
+        <p className="text-center my-4">
+          Peça em estoque com{" "}
+          <span className="font-semibold">envio imediato</span>
+        </p>
+
+        <div className="mt-10">
+          <h3 className="text-lg font-medium text-zinc-900">
+            Calcular Frete e Prazo
+          </h3>
+          <div className="mt-4 flex gap-x-4">
+            <input
+              type="text"
+              name="cep"
+              id="cep"
+              maxLength={9}
+              value={cep.replace(/^(\d{5})(\d{3})$/, "$1-$2")}
+              onChange={handleCepChange}
+              placeholder="Digite seu CEP"
+              className="block w-full max-w-xs rounded-md border-zinc-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm p-2"
+            />
+            <button
+              onClick={fetchShippingInfo}
+              disabled={isLoadingCep || cep.length !== 8}
+              className="rounded-md bg-zinc-900 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-50"
+            >
+              {isLoadingCep ? "Calculando..." : "Calcular"}
+            </button>
+          </div>
+          {cepError && <p className="mt-2 text-sm text-red-600">{cepError}</p>}
+          {shippingInfo && (
+            <div className="mt-4 p-4 border border-zinc-200 rounded-md bg-zinc-50">
+              <p className="text-sm font-medium text-zinc-900">
+                Endereço de Entrega:
+              </p>
+              <p className="text-sm text-zinc-700">
+                {shippingInfo.logradouro}, {shippingInfo.bairro}
+              </p>
+              <p className="text-sm text-zinc-700">
+                {shippingInfo.localidade} - {shippingInfo.uf}
+              </p>
+              <p className="text-sm text-zinc-700">CEP: {shippingInfo.cep}</p>
+              <p className="mt-2 text-sm text-green-600">
+                Frete disponível para este endereço.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  );
+  )
 }

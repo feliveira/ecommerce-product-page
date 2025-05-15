@@ -2,6 +2,8 @@
 
 Este projeto foi desenvolvido como parte de teste da [Montink](https://montink.com) focado na criação de uma página de detalhes de produto interativa e responsiva utilizando tecnologias modernas de desenvolvimento web.
 
+O resultado final pode ser visualizado aqui: [Link do Deploy](https://ecommerce-product-page-alpha-bice.vercel.app)
+
 ## Sobre o Projeto
 
 O objetivo principal foi construir uma página que exiba informações detalhadas de um produto, permitindo ao usuário selecionar variantes (tamanho e cor), visualizar imagens correspondentes à cor escolhida, calcular o frete e, crucialmente, persistir as escolhas e dados inseridos por um período limitado de tempo, mesmo após a atualização da página.
